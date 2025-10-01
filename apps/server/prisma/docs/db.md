@@ -58,12 +58,21 @@ erDiagram
   DateTime createdAt
   DateTime updatedAt
 }
+"template" {
+  String _id PK
+  String name
+  Json data
+  String previewUrl
+  DateTime createdAt
+  DateTime updatedAt
+}
 "image" {
   String _id PK
   String projectId FK
   String urlPath UK
   Json data
   String imageUrl
+  String templateId FK "nullable"
   DateTime createdAt
   DateTime updatedAt
 }
@@ -76,6 +85,7 @@ erDiagram
 "account" }o--|| "user" : user
 "project" }o--|| "user" : user
 "image" }o--|| "project" : project
+"image" }o--o| "template" : template
 ```
 
 ### `user`
@@ -143,6 +153,17 @@ Properties as follows:
 - `createdAt`:
 - `updatedAt`:
 
+### `template`
+
+Properties as follows:
+
+- `_id`:
+- `name`:
+- `data`:
+- `previewUrl`:
+- `createdAt`:
+- `updatedAt`:
+
 ### `image`
 
 Properties as follows:
@@ -152,6 +173,7 @@ Properties as follows:
 - `urlPath`:
 - `data`:
 - `imageUrl`:
+- `templateId`:
 - `createdAt`:
 - `updatedAt`:
 

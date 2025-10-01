@@ -34,7 +34,7 @@ model GeneratedImage {
     urlPath    String    @unique // "/blog/post-1" → ties image to a page
     data       Json // dynamic fields for template
     imageUrl   String
-    template   Template? @relation(fields: [templateId], references: [id])
+    template   Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
     templateId String?
 
     createdAt DateTime @default(now())
