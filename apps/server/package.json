@@ -34,9 +34,10 @@
     "@polar-sh/sdk": "^0.34.16"
   },
   "devDependencies": {
-    "tsdown": "^0.15.1",
-    "typescript": "^5.8.2",
     "@types/bun": "^1.2.6",
-    "prisma": "^6.15.0"
+    "prisma": "^6.15.0",
+    "prisma-markdown": "^3.0.1",
+    "tsdown": "^0.15.1",
+    "typescript": "^5.8.2"
   }
 }

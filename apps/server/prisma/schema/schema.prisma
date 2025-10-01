@@ -1,8 +1,14 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated"
+  provider     = "prisma-client"
+  output       = "../generated"
   moduleFormat = "esm"
-  runtime = "bun"
+  runtime      = "bun"
+}
+
+generator markdown {
+  provider = "prisma-markdown"
+  output   = "../docs/db.md"
+  title    = "Database Schema"
 }
 
 datasource db {
