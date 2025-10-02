@@ -1,5 +1,5 @@
 model Project {
-    id     String @id @map("_id")
+    id     String @id @default(uuid(7)) @map("_id")
     user   User   @relation(fields: [userId], references: [id])
     userId String
     name   String
@@ -14,7 +14,7 @@ model Project {
 }
 
 model Template {
-    id         String @id @map("_id")
+    id         String @id @default(uuid(7)) @map("_id")
     name       String
     data       Json // dynamic fields for template
     previewUrl String
@@ -28,7 +28,7 @@ model Template {
 }
 
 model GeneratedImage {
-    id         String    @id @map("_id")
+    id         String    @id @default(uuid(7)) @map("_id")
     project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
     projectId  String
     urlPath    String    @unique // "/blog/post-1" → ties image to a page
