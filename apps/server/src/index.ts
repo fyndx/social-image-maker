@@ -11,6 +11,7 @@ import { Elysia } from "elysia";
 import { auth } from "./lib/auth";
 import { createContext } from "./lib/context";
 import { appRouter } from "./routers";
+import { generateScreenshot } from "./routes/generate-screenshot";
 
 const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
@@ -72,6 +73,7 @@ const app = new Elysia()
 
     return result.toUIMessageStreamResponse();
   })
+  .use(generateScreenshot)
   .get("/", () => "OK")
   .listen(3000, () => {
     console.log("Server is running on http://localhost:3000");
