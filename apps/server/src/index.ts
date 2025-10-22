@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { google } from "@ai-sdk/google";
+import { wrap } from "@bogeychan/elysia-logger";
 import { cors } from "@elysiajs/cors";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -12,14 +13,18 @@ import { auth } from "./lib/auth";
 import { createContext } from "./lib/context";
 import { appRouter } from "./routers";
 import { generateScreenshot } from "./routes/generate-screenshot";
+import { logger } from "./services/logger";
+
+export const PORT = 3000;
 
 const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
     onError((error) => {
-      console.error(error);
+      logger.error(error);
     }),
   ],
 });
+
 const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
@@ -28,12 +33,13 @@ const apiHandler = new OpenAPIHandler(appRouter, {
   ],
   interceptors: [
     onError((error) => {
-      console.error(error);
+      logger.error(error);
     }),
   ],
 });
 
 const app = new Elysia()
+  .use(wrap(logger, { autoLogging: true }))
   .use(
     cors({
       origin: process.env.CORS_ORIGIN || "",
@@ -75,6 +81,6 @@ const app = new Elysia()
   })
   .use(generateScreenshot)
   .get("/", () => "OK")
-  .listen(3000, () => {
-    console.log("Server is running on http://localhost:3000");
+  .listen(PORT, () => {
+    logger.info(`Server is running on ${app.server?.url}`);
   });

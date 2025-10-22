@@ -3,6 +3,7 @@ import Elysia, { t } from "elysia";
 import prisma from "@/db";
 import { polarClient } from "@/lib/payments";
 import { putObject } from "@/lib/s3-client";
+import { sanitizeAndValidateUrl } from "@/utils/url-helpers";
 
 function hasActiveSubscription(customerState: CustomerState) {
   return customerState.activeSubscriptions?.some(
@@ -18,21 +19,13 @@ export const generateScreenshot = new Elysia().get(
   "/generate-screenshot",
   async (context) => {
     // http://fyndx.io/generate/screenshot?url=https://social-image-maker.vercel.app/blog/article-1?utm_source=twitter
-    // Clean the URL by removing any query parameters
-    const url = context.query.url;
-    // 1. Get the URL from the query params
-    const screenshotUrlRaw = new URL(
-      url.startsWith("http") ? url : `https://${url}`
-    );
-    // 2. Validate the URL
-
-    // 3. Extract the domain from the URL
-    const origin = screenshotUrlRaw.origin;
-    // 4. Check if the domain exists in the projects table
-    // 5. If exists, get the user associated with the project
+    const queryUrl = context.query.url;
+    const sanitizedUrl = sanitizeAndValidateUrl(queryUrl);
+    // Check if the domain exists in the projects table
+    // If exists, get the user associated with the project
     const project = await prisma.project.findUnique({
       where: {
-        domain: origin,
+        domain: sanitizedUrl.origin,
       },
       include: { user: true },
     });
@@ -52,10 +45,11 @@ export const generateScreenshot = new Elysia().get(
       return context.status(403, "User does not have an active subscription");
     }
     // 6.1 check if the page url screenshot is in db
+    const screenshotUrl = `${sanitizedUrl.origin}${sanitizedUrl.pathname}`;
     const existingImage = await prisma.generatedImage.findFirst({
       where: {
         projectId: project.id,
-        urlPath: screenshotUrlRaw.href,
+        urlPath: screenshotUrl,
       },
     });
 
@@ -73,21 +67,22 @@ export const generateScreenshot = new Elysia().get(
     }
 
     // 6.1 Check if the page exists and gives 200
-    const checkPageExists = await fetch(screenshotUrlRaw.href, {
+    const checkPageExists = await fetch(screenshotUrl, {
       method: "HEAD",
     });
-    if (checkPageExists.status === 404) {
-      return context.status(404, "The requested page does not exist");
+
+    if (!checkPageExists.ok) {
+      return context.status(
+        checkPageExists.status,
+        `The requested page is not available (HTTP ${checkPageExists.status})`
+      );
     }
 
-    const screenshotUrl = `${screenshotUrlRaw.origin}${screenshotUrlRaw.pathname}`;
     const encodedUrl = encodeURIComponent(screenshotUrl);
     const browserlessUrl = process.env.BROWSERLESS_URL;
     const browserlessToken = process.env.BROWSERLESS_TOKEN;
     if (!(browserlessUrl && browserlessToken)) {
-      return context
-        .status(500)
-        .body({ error: "Browserless configuration is missing" });
+      return context.status(500, "Browserless configuration error");
     }
     const apiUrl = `${browserlessUrl}/screenshot?token=${browserlessToken}&stealth=true`;
     const screenshotResponse = await fetch(apiUrl, {
@@ -128,14 +123,15 @@ export const generateScreenshot = new Elysia().get(
       });
 
       if (error || !success) {
-        return context.status(500).body({ error: "Error uploading to S3" });
+        context.set.status = 500;
+        return { error: "Error uploading to S3" };
       }
 
       await prisma.generatedImage.create({
         data: {
           projectId: project.id,
           urlPath: screenshotUrl,
-          // imageUrl
+          imageUrl: `${process.env.S3_ENDPOINT}/${encodedUrl}.png`,
         },
       });
 
@@ -152,7 +148,7 @@ export const generateScreenshot = new Elysia().get(
         ],
       });
 
-      return new Response({ success: true });
+      return { success: true };
     }
 
     return context.status(500, "Internal Server Error");
