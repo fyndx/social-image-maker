@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/style/useNamingConvention: environment variables */
 import { Type } from "typebox";
 import Value from "typebox/value";
-import { logger } from "@/services/logger";
+import { logger } from "@/infra/logger";
 
 export const EnvSchema = Type.Object({
   DATABASE_URL: Type.String({ format: "uri" }),

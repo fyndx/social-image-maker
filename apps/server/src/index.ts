@@ -10,11 +10,11 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { convertToModelMessages, streamText } from "ai";
 import { Elysia } from "elysia";
 import { Env } from "./env/schema";
+import { logger } from "./infra/logger";
 import { auth } from "./lib/auth";
 import { createContext } from "./lib/context";
 import { appRouter } from "./routers";
 import { generateScreenshot } from "./routes/generate-screenshot";
-import { logger } from "./services/logger";
 
 export const PORT = 3000;
 

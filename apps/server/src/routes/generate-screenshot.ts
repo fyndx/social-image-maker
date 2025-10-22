@@ -1,7 +1,7 @@
 import type { CustomerState } from "@polar-sh/sdk/models/components/customerstate.js";
 import Elysia, { t } from "elysia";
-import prisma from "@/db";
 import { Env } from "@/env/schema";
+import prisma from "@/infra/db";
 import { polarClient } from "@/lib/payments";
 import { putObject } from "@/lib/s3-client";
 import { sanitizeAndValidateUrl } from "@/utils/url-helpers";
