@@ -9,6 +9,7 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { convertToModelMessages, streamText } from "ai";
 import { Elysia } from "elysia";
+import { Env } from "./env/schema";
 import { auth } from "./lib/auth";
 import { createContext } from "./lib/context";
 import { appRouter } from "./routers";
@@ -42,7 +43,7 @@ const app = new Elysia()
   .use(wrap(logger, { autoLogging: true }))
   .use(
     cors({
-      origin: process.env.CORS_ORIGIN || "",
+      origin: Env.CORS_ORIGIN || "",
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,

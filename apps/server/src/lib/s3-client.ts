@@ -5,13 +5,14 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { Env } from "@/env/schema";
 
 export const S3 = new S3Client({
   region: "auto",
-  endpoint: `${process.env.S3_ENDPOINT}`,
+  endpoint: `${Env.S3_ENDPOINT}`,
   credentials: {
-    accessKeyId: process.env.ACCESS_KEY_ID,
-    secretAccessKey: process.env.SECRET_ACCESS_KEY,
+    accessKeyId: Env.ACCESS_KEY_ID,
+    secretAccessKey: Env.SECRET_ACCESS_KEY,
   },
 });
 

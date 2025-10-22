@@ -1,6 +1,7 @@
 import type { CustomerState } from "@polar-sh/sdk/models/components/customerstate.js";
 import Elysia, { t } from "elysia";
 import prisma from "@/db";
+import { Env } from "@/env/schema";
 import { polarClient } from "@/lib/payments";
 import { putObject } from "@/lib/s3-client";
 import { sanitizeAndValidateUrl } from "@/utils/url-helpers";
@@ -79,8 +80,8 @@ export const generateScreenshot = new Elysia().get(
     }
 
     const encodedUrl = encodeURIComponent(screenshotUrl);
-    const browserlessUrl = process.env.BROWSERLESS_URL;
-    const browserlessToken = process.env.BROWSERLESS_TOKEN;
+    const browserlessUrl = Env.BROWSERLESS_URL;
+    const browserlessToken = Env.BROWSERLESS_TOKEN;
     if (!(browserlessUrl && browserlessToken)) {
       return context.status(500, "Browserless configuration error");
     }
@@ -131,7 +132,7 @@ export const generateScreenshot = new Elysia().get(
         data: {
           projectId: project.id,
           urlPath: screenshotUrl,
-          imageUrl: `${process.env.S3_ENDPOINT}/${encodedUrl}.png`,
+          imageUrl: `${Env.S3_ENDPOINT}/${encodedUrl}.png`,
         },
       });
 
