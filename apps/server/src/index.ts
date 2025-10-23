@@ -1,24 +1,28 @@
-import "dotenv/config";
-import { google } from "@ai-sdk/google";
+import { wrap } from "@bogeychan/elysia-logger";
 import { cors } from "@elysiajs/cors";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { convertToModelMessages, streamText } from "ai";
 import { Elysia } from "elysia";
-import { auth } from "./lib/auth";
-import { createContext } from "./lib/context";
-import { appRouter } from "./routers";
+import { Env } from "@/env/schema";
+import { logger } from "@/infra/logger";
+import { auth } from "@/lib/auth";
+import { createContext } from "@/lib/context";
+import { screenshotModule } from "@/modules/generate/screenshot/screenshot-route";
+import { appRouter } from "@/routers";
+
+export const PORT = 3000;
 
 const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
     onError((error) => {
-      console.error(error);
+      logger.error(error);
     }),
   ],
 });
+
 const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
@@ -27,15 +31,16 @@ const apiHandler = new OpenAPIHandler(appRouter, {
   ],
   interceptors: [
     onError((error) => {
-      console.error(error);
+      logger.error(error);
     }),
   ],
 });
 
 const app = new Elysia()
+  .use(wrap(logger, { autoLogging: true }))
   .use(
     cors({
-      origin: process.env.CORS_ORIGIN || "",
+      origin: Env.CORS_ORIGIN || "",
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
@@ -62,17 +67,8 @@ const app = new Elysia()
     });
     return response ?? new Response("Not Found", { status: 404 });
   })
-  .post("/ai", async (context) => {
-    const body = await context.request.json();
-    const uiMessages = body.messages || [];
-    const result = streamText({
-      model: google("gemini-2.0-flash"),
-      messages: convertToModelMessages(uiMessages),
-    });
-
-    return result.toUIMessageStreamResponse();
-  })
+  .use(screenshotModule)
   .get("/", () => "OK")
-  .listen(3000, () => {
-    console.log("Server is running on http://localhost:3000");
+  .listen(PORT, () => {
+    logger.info(`Server is running on ${app.server?.url}`);
   });

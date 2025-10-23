@@ -70,7 +70,7 @@ erDiagram
   String _id PK
   String projectId FK
   String urlPath UK
-  Json data
+  Json data "nullable"
   String imageUrl
   String templateId FK "nullable"
   DateTime createdAt
