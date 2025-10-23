@@ -10,6 +10,11 @@ export const EnvSchema = Type.Object({
   BETTER_AUTH_URL: Type.String({ format: "uri" }),
   POLAR_ACCESS_TOKEN: Type.String(),
   POLAR_SUCCESS_URL: Type.String({ format: "uri" }),
+  POLAR_SERVER: Type.Union([
+    Type.Literal("production"),
+    Type.Literal("sandbox"),
+  ]),
+  GOOGLE_GENERATIVE_AI_API_KEY: Type.String(),
   BROWSERLESS_TOKEN: Type.String(),
   BROWSERLESS_URL: Type.String({ format: "uri" }),
   S3_ENDPOINT: Type.String({ format: "uri" }),

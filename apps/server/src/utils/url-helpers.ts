@@ -20,3 +20,8 @@ export const sanitizeAndValidateUrl = (rawUrl: string): URL => {
     throw new Error(`Invalid URL: ${decodedUrl}`);
   }
 };
+
+export const extractContentType = (headers: Headers): string => {
+  const contentType = headers.get("Content-Type");
+  return contentType ? contentType : "application/octet-stream";
+};

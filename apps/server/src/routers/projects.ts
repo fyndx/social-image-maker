@@ -1,5 +1,5 @@
 import { z } from "zod";
-import prisma from "@/db";
+import prisma from "@/infra/db";
 import { protectedProcedure } from "@/lib/orpc";
 
 export const projectsRouter = {

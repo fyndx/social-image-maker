@@ -1,5 +1,3 @@
-import "dotenv/config";
-import { google } from "@ai-sdk/google";
 import { wrap } from "@bogeychan/elysia-logger";
 import { cors } from "@elysiajs/cors";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
@@ -7,14 +5,13 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { convertToModelMessages, streamText } from "ai";
 import { Elysia } from "elysia";
-import { Env } from "./env/schema";
-import { logger } from "./infra/logger";
-import { auth } from "./lib/auth";
-import { createContext } from "./lib/context";
-import { appRouter } from "./routers";
-import { generateScreenshot } from "./routes/generate-screenshot";
+import { Env } from "@/env/schema";
+import { logger } from "@/infra/logger";
+import { auth } from "@/lib/auth";
+import { createContext } from "@/lib/context";
+import { routeScreenshot } from "@/modules/generate/screenshot/route";
+import { appRouter } from "@/routers";
 
 export const PORT = 3000;
 
@@ -70,17 +67,7 @@ const app = new Elysia()
     });
     return response ?? new Response("Not Found", { status: 404 });
   })
-  .post("/ai", async (context) => {
-    const body = await context.request.json();
-    const uiMessages = body.messages || [];
-    const result = streamText({
-      model: google("gemini-2.0-flash"),
-      messages: convertToModelMessages(uiMessages),
-    });
-
-    return result.toUIMessageStreamResponse();
-  })
-  .use(generateScreenshot)
+  .use(routeScreenshot)
   .get("/", () => "OK")
   .listen(PORT, () => {
     logger.info(`Server is running on ${app.server?.url}`);

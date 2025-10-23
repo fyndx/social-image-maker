@@ -1,5 +1,5 @@
 import z from "zod";
-import prisma from "../db";
+import prisma from "@/infra/db";
 import { publicProcedure } from "../lib/orpc";
 
 export const todoRouter = {

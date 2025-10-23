@@ -4,7 +4,10 @@ import { Env } from "@/env/schema";
 import prisma from "@/infra/db";
 import { polarClient } from "@/lib/payments";
 import { putObject } from "@/lib/s3-client";
-import { sanitizeAndValidateUrl } from "@/utils/url-helpers";
+import {
+  extractContentType,
+  sanitizeAndValidateUrl,
+} from "@/utils/url-helpers";
 
 function hasActiveSubscription(customerState: CustomerState) {
   return customerState.activeSubscriptions?.some(
@@ -16,11 +19,11 @@ function hasMeterBalance(customerState: CustomerState) {
   return customerState.activeMeters?.some((meter) => meter.balance > 0);
 }
 
-export const generateScreenshot = new Elysia().get(
+export const routeScreenshot = new Elysia().get(
   "/generate-screenshot",
   async (context) => {
     // http://fyndx.io/generate/screenshot?url=https://social-image-maker.vercel.app/blog/article-1?utm_source=twitter
-    const queryUrl = context.query.url;
+    const { url: queryUrl } = context.query;
     const sanitizedUrl = sanitizeAndValidateUrl(queryUrl);
     // Check if the domain exists in the projects table
     // If exists, get the user associated with the project
@@ -113,13 +116,14 @@ export const generateScreenshot = new Elysia().get(
     });
 
     if (screenshotResponse.ok) {
-      const contentType = screenshotResponse.headers.get("Content-Type");
+      const contentType = extractContentType(screenshotResponse.headers);
       const arrayBuffer = await screenshotResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-      const { success, error, response } = await putObject({
+      const { success, error } = await putObject({
         bucket: "og-images-staging",
         key: `${encodedUrl}.png`,
-        body: arrayBuffer,
+        body: buffer,
         contentType,
       });
 
