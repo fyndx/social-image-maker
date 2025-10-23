@@ -1,7 +1,9 @@
 import { Env } from "@/env/schema";
 import prisma from "@/infra/db";
+import { logger } from "@/infra/logger";
 import { polarClient } from "@/lib/payments";
 import { putObject } from "@/lib/s3-client";
+import { getSha256Hash } from "@/utils/hash";
 import { hasActiveSubscription, hasMeterBalance } from "@/utils/polar-helpers";
 import {
   extractContentType,
@@ -10,7 +12,9 @@ import {
 
 export async function generateScreenshotService(url: string) {
   // 1. Sanitize and validate the URL
+  logger.info(`Generating screenshot for URL: ${url}`);
   const sanitizedUrl = sanitizeAndValidateUrl(url);
+  logger.info(`Sanitized URL: ${sanitizedUrl.toString()}`);
   // 2. Check if the domain exists in the projects table
   const project = await prisma.project.findUnique({
     where: {
@@ -19,6 +23,9 @@ export async function generateScreenshotService(url: string) {
     include: { user: true },
   });
 
+  logger.info(
+    `${project ? "Found" : "No"} project for domain: ${sanitizedUrl.origin}`
+  );
   // 3. If no project found, return error
   if (!project) {
     return {
@@ -33,8 +40,12 @@ export async function generateScreenshotService(url: string) {
   const customerState = await polarClient.customers.getStateExternal({
     externalId: project.user.id,
   });
+  logger.info(`Fetched customer state for user ID: ${project.user.id}`);
 
   const hasSubscription = hasActiveSubscription(customerState);
+  logger.info(
+    `User ${project.user.id} subscription: ${hasSubscription ? "active" : "inactive"}`
+  );
 
   if (!hasSubscription) {
     return {
@@ -46,12 +57,16 @@ export async function generateScreenshotService(url: string) {
 
   // Check if screenshot already exists
   const screenshotUrl = `${sanitizedUrl.origin}${sanitizedUrl.pathname}`;
+  logger.info(`Checking existing screenshot for URL path: ${screenshotUrl}`);
   const existingImage = await prisma.generatedImage.findFirst({
     where: {
       projectId: project.id,
       urlPath: screenshotUrl,
     },
   });
+  logger.info(
+    `${existingImage ? existingImage.imageUrl : "No"} existing screenshot found for URL path: ${screenshotUrl}`
+  );
 
   if (existingImage) {
     return {
@@ -63,6 +78,9 @@ export async function generateScreenshotService(url: string) {
 
   // Check Credits
   const hasBalance = hasMeterBalance(customerState);
+  logger.info(
+    `User ${project.user.id} meter balance: ${hasBalance ? "sufficient" : "insufficient"}`
+  );
   if (!hasBalance) {
     return {
       success: false,
@@ -75,6 +93,9 @@ export async function generateScreenshotService(url: string) {
   const checkPageExists = await fetch(screenshotUrl, {
     method: "HEAD",
   });
+  logger.info(
+    `Page existence check for URL ${screenshotUrl}: ${checkPageExists.status}`
+  );
 
   if (!checkPageExists.ok) {
     return {
@@ -86,6 +107,9 @@ export async function generateScreenshotService(url: string) {
 
   // Generate Screenshot
   const screenshot = await captureScreenshot(screenshotUrl);
+  logger.info(
+    `Screenshot generation response status for URL ${screenshotUrl}: ${screenshot.status}`
+  );
 
   if (!screenshot.ok) {
     return {
@@ -98,14 +122,20 @@ export async function generateScreenshotService(url: string) {
   // Upload to S3
   const contentType = extractContentType(screenshot.headers);
   const arrayBuffer = await screenshot.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
 
-  const { success: _success, error } = await putObject({
+  const urlSha256 = getSha256Hash(screenshotUrl);
+  const imageUrlUploadKey = `${sanitizedUrl.hostname}/${urlSha256}.png`;
+  logger.info({ imageUrlUploadKey }, "Uploading screenshot to S3 with key");
+  const { success, error } = await putObject({
     bucket: "og-images-staging",
-    key: `${encodeURIComponent(screenshotUrl)}.png`,
-    body: buffer,
+    path: imageUrlUploadKey,
+    data: arrayBuffer,
     contentType,
   });
+
+  logger.info(
+    `S3 upload ${success ? "succeeded" : "failed"} for URL path: ${screenshotUrl}`
+  );
 
   if (error) {
     return {
@@ -120,9 +150,13 @@ export async function generateScreenshotService(url: string) {
     data: {
       projectId: project.id,
       urlPath: screenshotUrl,
-      imageUrl: `${Env.S3_ENDPOINT}/${encodeURIComponent(screenshotUrl)}.png`,
+      imageUrl: `${Env.S3_PUBLIC_ACCESS_URL}/${imageUrlUploadKey}`,
     },
   });
+
+  logger.info(
+    `Saved new generated image record in DB for URL path: ${screenshotUrl}`
+  );
 
   // Ingest event
   await polarClient.events.ingest({
@@ -138,8 +172,12 @@ export async function generateScreenshotService(url: string) {
     ],
   });
 
+  logger.info(
+    `Ingested og-file-generated event for user ID: ${project.user.id}`
+  );
+
   // Return image blob
-  return new Response(buffer, {
+  return new Response(arrayBuffer, {
     headers: {
       "Content-Type": contentType,
     },
@@ -147,7 +185,6 @@ export async function generateScreenshotService(url: string) {
 }
 
 async function captureScreenshot(url: string): Promise<Response> {
-  const encodedUrl = encodeURIComponent(url);
   const browserlessUrl = Env.BROWSERLESS_URL;
   const browserlessToken = Env.BROWSERLESS_TOKEN;
 
@@ -155,14 +192,15 @@ async function captureScreenshot(url: string): Promise<Response> {
     return new Response("Browserless configuration error", { status: 500 });
   }
 
-  const apiUrl = `${browserlessUrl}/screenshot?token=${browserlessToken}&stealth=true`;
+  const apiUrl = `${browserlessUrl}/chromium/screenshot?token=${browserlessToken}&stealth=true`;
+  logger.info({ apiUrl }, "Calling browserless screenshot API");
   const screenshotResponse = await fetch(apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      url: encodedUrl,
+      url,
       userAgent: {
         userAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
