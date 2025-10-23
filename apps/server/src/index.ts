@@ -10,7 +10,7 @@ import { Env } from "@/env/schema";
 import { logger } from "@/infra/logger";
 import { auth } from "@/lib/auth";
 import { createContext } from "@/lib/context";
-import { routeScreenshot } from "@/modules/generate/screenshot/route";
+import { screenshotModule } from "@/modules/generate/screenshot/screenshot-route";
 import { appRouter } from "@/routers";
 
 export const PORT = 3000;
@@ -67,7 +67,7 @@ const app = new Elysia()
     });
     return response ?? new Response("Not Found", { status: 404 });
   })
-  .use(routeScreenshot)
+  .use(screenshotModule)
   .get("/", () => "OK")
   .listen(PORT, () => {
     logger.info(`Server is running on ${app.server?.url}`);
