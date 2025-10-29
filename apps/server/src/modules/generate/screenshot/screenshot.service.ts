@@ -124,7 +124,7 @@ export async function generateScreenshotService(url: string) {
   const arrayBuffer = await screenshot.arrayBuffer();
 
   const urlSha256 = getSha256Hash(screenshotUrl);
-  const imageUrlUploadKey = `${sanitizedUrl.hostname}/${urlSha256}.png`;
+  const imageUrlUploadKey = `${sanitizedUrl.hostname}/${urlSha256}.jpeg`;
   logger.info({ imageUrlUploadKey }, "Uploading screenshot to S3 with key");
   const { success, error } = await putObject({
     bucket: "og-images-staging",
@@ -193,7 +193,7 @@ async function captureScreenshot(url: string): Promise<Response> {
   }
 
   const apiUrl = `${browserlessUrl}/chromium/screenshot?token=${browserlessToken}&stealth=true`;
-  logger.info({ apiUrl }, "Calling browserless screenshot API");
+  logger.info({ endpoint: `${browserlessUrl}/chromium/screenshot` }, "Calling browserless screenshot API");
   const screenshotResponse = await fetch(apiUrl, {
     method: "POST",
     headers: {
