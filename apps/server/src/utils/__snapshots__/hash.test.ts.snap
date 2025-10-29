@@ -1,0 +1,3 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`getSha256Hash hash string 1`] = `"373c78fbd0749c68178c505ee70d3094d05acf3e12562830cccc7c46b3f09a06"`;
