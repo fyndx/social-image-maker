@@ -70,5 +70,5 @@ const app = new Elysia()
   .use(screenshotModule)
   .get("/", () => "OK")
   .listen(PORT, () => {
-    logger.info(`Server is running on ${app.server?.url}`);
+    logger.info(`Server is running on http://localhost:${PORT}`);
   });

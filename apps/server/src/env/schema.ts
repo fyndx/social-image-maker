@@ -18,6 +18,7 @@ export const EnvSchema = Type.Object({
   BROWSERLESS_TOKEN: Type.String(),
   BROWSERLESS_URL: Type.String({ format: "uri" }),
   S3_ENDPOINT: Type.String({ format: "uri" }),
+  S3_PUBLIC_ACCESS_URL: Type.String({ format: "uri" }),
   ACCESS_KEY_ID: Type.String(),
   SECRET_ACCESS_KEY: Type.String(),
 });
