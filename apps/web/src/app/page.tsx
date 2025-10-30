@@ -4,10 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import {Footer} from "@/components/footer";
+import Header from "@/components/header";
 
 export default function Home() {
 	return (
-		<div className="min-h-screen bg-gradient-to-b from-background to-muted pt-16">
+		<>
+			<Header />
+			<div className="min-h-screen bg-gradient-to-b from-background to-muted pt-16 md:pt-20">
 			{/* Hero Section */}
 			<section className="py-20 px-4">
 				<div className="container mx-auto max-w-6xl text-center">
@@ -334,5 +337,6 @@ export default function Home() {
 
 			<Footer />
 		</div>
+		</>
 	);
 }

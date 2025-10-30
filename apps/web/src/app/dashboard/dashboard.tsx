@@ -1,8 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { authClient } from "@/lib/auth-client";
-import { useQuery } from "@tanstack/react-query";
-import { orpc } from "@/utils/orpc";
+import { useState } from "react";
+import ProjectList from "./ProjectList";
+import ProjectDialog from "./ProjectDialog";
 
 export default function Dashboard({
 	customerState,
@@ -11,26 +13,36 @@ export default function Dashboard({
 	customerState: ReturnType<typeof authClient.customer.state>;
 	session: typeof authClient.$Infer.Session;
 }) {
-	const privateData = useQuery(orpc.privateData.queryOptions());
+	const [open, setOpen] = useState(false);
+	const [mode, setMode] = useState<'add' | 'edit'>('add');
+	const [selectedProject, setSelectedProject] = useState<any>(null);
 
-	const hasProSubscription = customerState?.activeSubscriptions?.length! > 0;
-	console.log("Active subscriptions:", customerState?.activeSubscriptions);
+	const handleAddProject = () => {
+		setMode('add');
+		setSelectedProject(null);
+		setOpen(true);
+	};
+
+	const handleEditProject = (project: any) => {
+		setMode('edit');
+		setSelectedProject(project);
+		setOpen(true);
+	};
 
 	return (
 		<>
-			<p>API: {privateData.data?.message}</p>
-			<p>Plan: {hasProSubscription ? "Pro" : "Free"}</p>
-			{hasProSubscription ? (
-				<Button onClick={async () => await authClient.customer.portal()}>
-					Manage Subscription
-				</Button>
-			) : (
-				<Button
-					onClick={async () => await authClient.checkout({ slug: "pro" })}
-				>
-					Upgrade to Pro
-				</Button>
-			)}
+			<div className="mb-4">
+				<Button onClick={handleAddProject}>Add Project</Button>
+			</div>
+			<ProjectList onEdit={handleEditProject} />
+			<Dialog open={open} onOpenChange={setOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>{mode === 'edit' ? 'Edit Project' : 'Add New Project'}</DialogTitle>
+					</DialogHeader>
+					<ProjectDialog mode={mode} project={selectedProject} onClose={() => setOpen(false)} />
+				</DialogContent>
+			</Dialog>
 		</>
 	);
 }
