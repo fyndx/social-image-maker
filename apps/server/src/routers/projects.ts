@@ -1,6 +1,7 @@
 import { z } from "zod";
 import prisma from "@/infra/db";
 import { protectedProcedure } from "@/lib/orpc";
+import { ORPCError } from "@orpc/server";
 
 export const projectsRouter = {
   getAll: protectedProcedure
@@ -74,6 +75,21 @@ export const projectsRouter = {
       if (input.name !== undefined) updateData.name = input.name;
       if (input.domain !== undefined) updateData.domain = input.domain;
 
+      if(Object.keys(updateData).length === 0) {
+        throw new ORPCError('BAD_REQUEST', {message: "No fields provided for update."});
+      }
+
+      const existingProject = await prisma.project.findUnique({
+        where: {
+          id: input.id,
+          userId: context.session.user.id,
+        },
+      });
+
+      if (!existingProject) {
+        throw new ORPCError('NOT_FOUND', {message: "Project not found or you do not have permission to update it."});
+      }
+
       const project = await prisma.project.update({
         where: {
           id: input.id,
@@ -81,6 +97,7 @@ export const projectsRouter = {
         },
         data: updateData,
       });
+
       return project;
     }),
 };
