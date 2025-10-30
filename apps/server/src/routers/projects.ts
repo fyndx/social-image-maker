@@ -60,4 +60,27 @@ export const projectsRouter = {
       });
       return project;
     }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        domain: z.string().url().optional(),
+      })
+    )
+    .handler(async ({ context, input }) => {
+      const updateData: { name?: string; domain?: string } = {};
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.domain !== undefined) updateData.domain = input.domain;
+
+      const project = await prisma.project.update({
+        where: {
+          id: input.id,
+          userId: context.session.user.id,
+        },
+        data: updateData,
+      });
+      return project;
+    }),
 };
