@@ -72,8 +72,8 @@ export const projectsRouter = {
     )
     .handler(async ({ context, input }) => {
       const updateData: { name?: string; domain?: string } = {};
-      if (input.name !== undefined) updateData.name = input.name;
-      if (input.domain !== undefined) updateData.domain = input.domain;
+      if (input.name !== undefined) { updateData.name = input.name; }
+      if (input.domain !== undefined) { updateData.domain = input.domain; }
 
       if(Object.keys(updateData).length === 0) {
         throw new ORPCError('BAD_REQUEST', {message: "No fields provided for update."});
